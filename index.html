@@ -490,7 +490,7 @@ function initCharts() {
     plugins: [totalsPlugin]
   });
   $("#progKeys").innerHTML = STATUS.map(s => `<span><i style="background:${s.color}"></i>${esc(s.key)}</span>`).join("") +
-    `<span><i style="background:${DONE_GREEN}"></i>Success 100%</span><span>แท่งเข้ม = Success_Pct · แท่งอ่อน = Deliver_Pct</span>`;
+    `<span><i style="background:${DONE_GREEN}"></i>Success 100%</span><span>แท่งเข้ม = ความคืบหน้าการพัฒนา (%) · แท่งอ่อน = ความคืบหน้าการส่งมอบ (%)</span>`;
   $("#deptKeys").innerHTML = GROUPS.map(g => `<span><i style="background:${g.color}"></i>${esc(g.label)}</span>`).join("");
 
   charts.prog = new Chart($("#prog"), {
