@@ -44,6 +44,8 @@ button,select,input{font:inherit;color:inherit}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
 .chip{border:1px solid #c5d0ea;background:#e8edf8;color:var(--success);border-radius:999px;padding:2px 12px;font-size:13px;cursor:pointer}
 .chip:hover{background:#dbe3f5}
+.chip.focus{background:#fff4d6;border-color:#f3dcae;color:var(--warn)}
+.chip.focus:hover{background:#fdeed2}
 
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:14px;margin:0 0 16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;gap:14px;align-items:center}
@@ -73,6 +75,9 @@ button,select,input{font:inherit;color:inherit}
 .keys span{display:inline-flex;align-items:center;gap:6px}
 .keys i{width:12px;height:12px;border-radius:3px}
 .cv{position:relative;width:100%}
+.cv-scroll{overflow-x:auto;overflow-y:hidden;padding-bottom:4px}
+.legend small{display:block;color:var(--muted);font-size:11px;line-height:1.3}
+.legend .grp{line-height:1.25}
 .empty{padding:28px 8px;text-align:center;color:var(--muted);font-size:14px}
 
 .bar-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:10px 0 12px}
@@ -138,10 +143,18 @@ td.nm{font-weight:500;min-width:220px}
     <div class="chips" id="chips" hidden></div>
     <section class="cards" id="cards" aria-label="สรุปจำนวนโปรเจกต์"></section>
 
+    <section class="panel">
+      <h2>Project Progress and Delivery</h2>
+      <p class="hint">เปรียบเทียบความคืบหน้าการพัฒนา (Success) กับการส่งมอบ (Delivery) เรียงจากความคืบหน้ามากไปน้อย (ซ้าย → ขวา) เลื่อนซ้าย-ขวาได้เมื่อมีโปรเจกต์จำนวนมาก</p>
+      <div class="keys" id="progKeys"></div>
+      <div class="cv-scroll" id="progScroll"><div class="cv" id="progWrap"><canvas id="prog" role="img" aria-label="Bar chart แนวตั้งเปรียบเทียบ Success และ Deliver ของแต่ละโปรเจกต์"></canvas></div></div>
+      <div class="empty" id="progEmpty" hidden>ไม่มีโปรเจกต์ตามตัวกรองที่เลือก</div>
+    </section>
+
     <div class="grid2">
       <section class="panel">
         <h2>Project Status Overview</h2>
-        <p class="hint">สัดส่วนโปรเจกต์ตามสถานะ คลิกเพื่อกรองตารางและกราฟความคืบหน้า</p>
+        <p class="hint">สัดส่วนโปรเจกต์ตามสถานะ คลิกเพื่อโฟกัสสถานะนั้นในทุกกราฟและตาราง คลิกซ้ำเพื่อยกเลิก</p>
         <div class="donutBox">
           <div class="dw"><canvas id="donut" role="img" aria-label="Donut chart แสดงสัดส่วนโปรเจกต์ตามสถานะ"></canvas></div>
           <ul class="legend" id="legend"></ul>
@@ -149,22 +162,11 @@ td.nm{font-weight:500;min-width:220px}
       </section>
       <section class="panel">
         <h2>Department Project Overview</h2>
-        <p class="hint">จำนวนโปรเจกต์แยกตามแผนกและสถานะ คลิกที่แผนกเพื่อกรอง</p>
+        <p class="hint">จำนวนโปรเจกต์แยกตามแผนกและสถานะ คลิกที่แผนกเพื่อโฟกัส</p>
         <div class="keys" id="deptKeys"></div>
         <div class="cv" id="deptWrap"><canvas id="deptChart" role="img" aria-label="Bar chart จำนวนโปรเจกต์แยกตามแผนกและสถานะ"></canvas></div>
       </section>
     </div>
-
-    <section class="panel">
-      <h2>Project Progress and Delivery</h2>
-      <p class="hint">เปรียบเทียบความคืบหน้าการพัฒนา (Success) กับการส่งมอบ (Delivery) เรียงจากความคืบหน้ามากไปน้อย</p>
-      <div class="keys">
-        <span><i style="background:var(--success)"></i>Success_Pct</span>
-        <span><i style="background:var(--deliver)"></i>Deliver_Pct</span>
-      </div>
-      <div class="cv" id="progWrap"><canvas id="prog" role="img" aria-label="Bar chart เปรียบเทียบ Success และ Deliver ของแต่ละโปรเจกต์"></canvas></div>
-      <div class="empty" id="progEmpty" hidden>ไม่มีโปรเจกต์ตามตัวกรองที่เลือก</div>
-    </section>
 
     <section class="panel">
       <h2>Project Detail</h2>
@@ -196,13 +198,18 @@ const STATUS = [
   { key: "Hand over",        color: "#2563eb", bg: "#e5edfd", fg: "#1e40af" },
   { key: "Completed",        color: "#16a34a", bg: "#e3f5ea", fg: "#166534" }
 ];
-const SUCCESS_COLOR = "#1e3a8a", DELIVER_COLOR = "#9db2e0";
+/* กลุ่มสถานะที่ใช้ในกราฟ/การ์ด: Hand over + Completed ถือเป็น "สำเร็จ" */
+const GROUPS = STATUS.map(s => ({ key: s.key, label: s.key, members: [s.key], color: s.color }));
+const grpOf = st => (GROUPS.find(g => g.members.includes(st)) || {}).key || "";
+const grpLabel = k => { const g = GROUPS.find(x => x.key === k); return g ? g.label : k; };
+const SUCCESS_COLOR = "#15803d", DELIVER_COLOR = "#86d19b", DONE_GREEN = "#16a34a";
 const ICON = {
   total: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   done: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/>',
   prog: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   wait: '<circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/>',
-  hand: '<path d="M4 12h12"/><path d="M12 7l5 5-5 5"/><path d="M20 5v14"/>'
+  hand: '<path d="M4 12h12"/><path d="M12 7l5 5-5 5"/><path d="M20 5v14"/>',
+  uat: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h9"/>'
 };
 const COLS = [
   { k: "name", l: "Project Name" }, { k: "dept", l: "Department" }, { k: "status", l: "Status" },
@@ -217,7 +224,9 @@ const stOf = key => STATUS.find(s => s.key === key);
 
 let DATA = [], UNKNOWN = 0, loaded = false, lastLoad = 0, donutTotal = 0;
 const charts = {};
-const state = { dept: "", status: "", q: "", sort: { key: "success", dir: "desc" }, page: 1 };
+const state = { dept: "", status: "", q: "", fDept: "", fStatus: "", sort: { key: "success", dir: "desc" }, page: 1 };
+/* focus = ไฮไลต์รายการที่คลิก (ไม่ตัดข้อมูลออก) ส่วน dept/status/q ด้านบนคือ filter */
+const matchFocus = r => (!state.fDept || r.dept === state.fDept) && (!state.fStatus || r.status === state.fStatus);
 
 /* ---------- data layer: Google Sheets CSV (replace fetchProjects to use another API) ---------- */
 function parseCSV(t) {
@@ -266,15 +275,16 @@ async function fetchProjects() {
 
 /* ---------- derived data ---------- */
 const deptRows = () => state.dept ? DATA.filter(d => d.dept === state.dept) : DATA;
-const projRows = () => deptRows().filter(d => !state.status || d.status === state.status);
-const countBy = rows => Object.fromEntries(STATUS.map(s => [s.key, rows.filter(r => r.status === s.key).length]));
+const projRows = () => deptRows().filter(d => !state.status || grpOf(d.status) === state.status);
+const countBy = rows => Object.fromEntries(GROUPS.map(g => [g.key, rows.filter(r => grpOf(r.status) === g.key).length]));
 function tableRows() {
   const q = state.q.trim().toLowerCase();
   const rows = projRows().filter(d => !q || d.name.toLowerCase().includes(q));
   const S = { name: r => r.name.toLowerCase(), dept: r => r.dept.toLowerCase(), status: r => r.stage,
     success: r => r.success, deliver: r => r.deliver, remark: r => r.remark.toLowerCase() }[state.sort.key];
   const m = state.sort.dir === "asc" ? 1 : -1;
-  return rows.slice().sort((a, b) => { const x = S(a), y = S(b); return x < y ? -m : x > y ? m : a.name.localeCompare(b.name); });
+  const sorted = rows.slice().sort((a, b) => { const x = S(a), y = S(b); return x < y ? -m : x > y ? m : a.name.localeCompare(b.name); });
+  return state.fDept || state.fStatus ? [...sorted.filter(matchFocus), ...sorted.filter(r => !matchFocus(r))] : sorted;
 }
 
 /* ---------- components ---------- */
@@ -283,9 +293,10 @@ function renderCards() {
   const defs = [
     ["Total Projects", t, "ทุกสถานะ", "#1e3a8a", "#e8edf8", ICON.total],
     ["Completed", c["Completed"], pct(c["Completed"], t) + "% ของทั้งหมด", "#16a34a", "#e3f5ea", ICON.done],
-    ["In Progress", c["development"] + c["UAT"], "development + UAT", "#f97316", "#ffeedd", ICON.prog],
-    ["Waiting Development", c["wait development"], pct(c["wait development"], t) + "% ของทั้งหมด", "#64748b", "#eef1f5", ICON.wait],
-    ["Hand Over", c["Hand over"], pct(c["Hand over"], t) + "% ของทั้งหมด", "#2563eb", "#e5edfd", ICON.hand]
+    ["Hand Over", c["Hand over"], pct(c["Hand over"], t) + "% ของทั้งหมด", "#2563eb", "#e5edfd", ICON.hand],
+    ["UAT", c["UAT"], pct(c["UAT"], t) + "% ของทั้งหมด", "#7c3aed", "#efe9fd", ICON.uat],
+    ["Development", c["development"], pct(c["development"], t) + "% ของทั้งหมด", "#f97316", "#ffeedd", ICON.prog],
+    ["Waiting Development", c["wait development"], pct(c["wait development"], t) + "% ของทั้งหมด", "#64748b", "#eef1f5", ICON.wait]
   ];
   $("#cards").innerHTML = defs.map(([l, n, s, col, bg, ic]) =>
     `<div class="card"><div class="ic" style="background:${bg};color:${col}"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg></div>
@@ -302,13 +313,14 @@ const centerText = { id: "centerText", afterDraw(ch) {
 } };
 
 function renderDonut() {
-  const rows = deptRows(), c = countBy(rows), known = STATUS.reduce((a, s) => a + c[s.key], 0);
+  const rows = deptRows(), c = countBy(rows), known = GROUPS.reduce((a, g) => a + c[g.key], 0);
   donutTotal = rows.length;
-  charts.donut.data.datasets[0].data = STATUS.map(s => c[s.key]);
+  charts.donut.data.datasets[0].data = GROUPS.map(g => c[g.key]);
+  charts.donut.data.datasets[0].backgroundColor = GROUPS.map(g => !state.fStatus || g.key === state.fStatus ? g.color : hexA(g.color, 0.22));
   charts.donut.update();
-  $("#legend").innerHTML = STATUS.slice().reverse().map(s =>
-    `<li><button type="button" data-s="${esc(s.key)}" aria-pressed="${state.status === s.key}">
-      <i style="background:${s.color}"></i><span>${esc(s.key)}</span><b>${c[s.key]}</b><em>${pct(c[s.key], known)}%</em></button></li>`).join("");
+  $("#legend").innerHTML = GROUPS.slice().reverse().map(g =>
+    `<li><button type="button" data-s="${esc(g.key)}" aria-pressed="${state.fStatus === g.key}" ${state.fStatus && state.fStatus !== g.key ? 'style="opacity:.45"' : ""}>
+      <i style="background:${g.color}"></i><span class="grp">${esc(g.label)}${g.note ? `<small>${esc(g.note)}</small>` : ""}</span><b>${c[g.key]}</b><em>${pct(c[g.key], known)}%</em></button></li>`).join("");
 }
 
 const totalsPlugin = { id: "totals", afterDatasetsDraw(ch) {
@@ -328,43 +340,63 @@ function renderDept() {
   $("#deptWrap").style.height = (names.length * 42 + 56) + "px";
   const ch = charts.dept;
   ch.data.labels = names;
-  STATUS.forEach((s, i) => {
+  GROUPS.forEach((g, i) => {
     const ds = ch.data.datasets[i];
-    ds.data = names.map(n => DATA.filter(d => d.dept === n && d.status === s.key).length);
-    ds.backgroundColor = names.map(n => !state.dept || n === state.dept ? s.color : hexA(s.color, 0.22));
+    ds.data = names.map(n => DATA.filter(d => d.dept === n && grpOf(d.status) === g.key).length);
+    ds.backgroundColor = names.map(n => (!state.dept || n === state.dept) && (!state.fDept || n === state.fDept) && (!state.fStatus || g.key === state.fStatus) ? g.color : hexA(g.color, 0.2));
   });
   ch.update();
 }
 
-function wrap(s, n) {
+function wrap(s, n, max = 3) {
   const out = []; let line = "";
   s.split(" ").forEach(w => {
+    while (w.length > n) { if (line) { out.push(line); line = ""; } out.push(w.slice(0, n)); w = w.slice(n); }
     if ((line + " " + w).trim().length > n && line) { out.push(line); line = w; } else line = (line + " " + w).trim();
   });
   if (line) out.push(line);
+  if (out.length > max) { out.length = max; out[max - 1] = out[max - 1].slice(0, Math.max(1, n - 1)) + "…"; }
   return out;
 }
 
 const pctLabels = { id: "pctLabels", afterDatasetsDraw(ch) {
   const ctx = ch.ctx;
-  ctx.save(); ctx.font = "600 11px Sarabun,sans-serif"; ctx.textBaseline = "middle"; ctx.fillStyle = "#334155";
-  ch.data.datasets.forEach((ds, di) => ch.getDatasetMeta(di).data.forEach((bar, i) => ctx.fillText(ds.data[i] + "%", bar.x + 5, bar.y)));
+  ctx.save(); ctx.font = "600 11px Sarabun,sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic"; ctx.fillStyle = "#334155";
+  ch.data.datasets.forEach((ds, di) => ch.getDatasetMeta(di).data.forEach((bar, i) => ctx.fillText(ds.data[i] + "%", bar.x, bar.y - 6)));
   ctx.restore();
 } };
 
 function renderProg() {
   const rows = projRows().slice().sort((a, b) => b.success - a.success || b.deliver - a.deliver || a.name.localeCompare(b.name));
   $("#progEmpty").hidden = rows.length > 0;
-  $("#progWrap").hidden = rows.length === 0;
+  $("#progScroll").hidden = rows.length === 0;
   if (!rows.length) return;
-  const w = $("#progWrap").clientWidth || 800, at = w < 520 ? 20 : w < 800 ? 30 : 40;
-  $("#progWrap").style.height = (rows.length * 46 + 56) + "px";
+  const SLOT = 92, avail = $("#progScroll").clientWidth || 800;
+  const width = Math.max(avail, rows.length * SLOT + 50), slotW = (width - 50) / rows.length;
+  const at = Math.max(10, Math.min(28, Math.floor(slotW / 7.5)));
+  $("#progWrap").style.width = width + "px";
+  $("#progWrap").style.height = "420px";
   const ch = charts.prog;
   ch.$rows = rows;
   ch.data.labels = rows.map(r => wrap(r.name, at));
   ch.data.datasets[0].data = rows.map(r => r.success);
   ch.data.datasets[1].data = rows.map(r => r.deliver);
+  const baseCol = r => r.success >= 100 ? DONE_GREEN : (stOf(r.status) || { color: "#94a3b8" }).color;
+  ch.data.datasets[0].backgroundColor = rows.map(r => matchFocus(r) ? baseCol(r) : hexA(baseCol(r), 0.18));
+  ch.data.datasets[1].backgroundColor = rows.map(r => hexA(baseCol(r), matchFocus(r) ? 0.4 : 0.1));
   ch.update();
+  ch.resize();
+  if (scrollFocus) {
+    scrollFocus = false;
+    const sc = $("#progScroll"), first = rows.findIndex(matchFocus);
+    const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    if (state.fDept || state.fStatus) {
+      if (first > -1) {
+        const x = ch.scales.x.getPixelForValue(first);
+        sc.scrollTo({ left: Math.max(0, x - 80), behavior });
+      }
+    } else sc.scrollTo({ left: 0, behavior });
+  }
 }
 
 function renderTable() {
@@ -379,13 +411,15 @@ function renderTable() {
   }).join("")}</tr></thead><tbody>${part.length ? part.map(r => {
     const s = stOf(r.status) || { bg: "#eef1f5", fg: "#475569" };
     const bar = (v, col) => `<div class="pb"><div class="bar"><span style="width:${v}%;background:${col}"></span></div><b>${Math.round(v)}%</b></div>`;
-    return `<tr><td class="nm">${esc(r.name)}</td><td>${esc(r.dept)}</td>
+    const fo = state.fDept || state.fStatus, tr = fo ? (matchFocus(r) ? ' style="background:#f3f7ff"' : ' style="opacity:.4"') : "";
+    return `<tr${tr}><td class="nm">${esc(r.name)}</td><td>${esc(r.dept)}</td>
       <td><span class="badge" style="background:${s.bg};color:${s.fg}"><i></i>${esc(r.status || r.rawStatus || "-")}</span></td>
       <td>${bar(r.success, SUCCESS_COLOR)}</td><td>${bar(r.deliver, DELIVER_COLOR)}</td>
       <td class="rm">${r.remark ? esc(r.remark) : "–"}</td></tr>`;
   }).join("") : `<tr><td colspan="6"><div class="empty">ไม่พบโปรเจกต์ที่ตรงกับเงื่อนไข</div></td></tr>`}</tbody>`;
 
   $("#count").textContent = n ? `แสดง ${from + 1}–${from + part.length} จาก ${n} โปรเจกต์` : "0 โปรเจกต์";
+  if (n && (state.fDept || state.fStatus)) $("#count").textContent += " · โฟกัส " + rows.filter(matchFocus).length + " โปรเจกต์ (แสดงก่อน)";
   let nums = "";
   if (pages > 1) {
     const lo = Math.max(1, Math.min(state.page - 2, pages - 4)), hi = Math.min(pages, lo + 4);
@@ -399,9 +433,11 @@ function renderTable() {
 function renderChips() {
   const c = [];
   if (state.dept) c.push(["dept", "Department: " + state.dept]);
-  if (state.status) c.push(["status", "Status: " + state.status]);
+  if (state.status) c.push(["status", "Status: " + grpLabel(state.status)]);
   if (state.q.trim()) c.push(["q", "ค้นหา: " + state.q.trim()]);
-  $("#chips").innerHTML = c.map(([k, t]) => `<button class="chip" type="button" data-k="${k}" aria-label="ลบตัวกรอง ${esc(t)}">${esc(t)} ×</button>`).join("");
+  if (state.fDept) c.push(["fdept", "โฟกัสแผนก: " + state.fDept]);
+  if (state.fStatus) c.push(["fstatus", "โฟกัสสถานะ: " + grpLabel(state.fStatus)]);
+  $("#chips").innerHTML = c.map(([k, t]) => `<button class="chip${k[0] === "f" ? " focus" : ""}" type="button" data-k="${k}" aria-label="ลบตัวกรอง ${esc(t)}">${esc(t)} ×</button>`).join("");
   $("#chips").hidden = !c.length;
   $("#reset").hidden = !c.length;
   $("#dept").value = state.dept;
@@ -420,14 +456,14 @@ function initCharts() {
 
   charts.donut = new Chart($("#donut"), {
     type: "doughnut",
-    data: { labels: STATUS.map(s => s.key), datasets: [{ data: [], backgroundColor: STATUS.map(s => s.color), borderColor: "#fff", borderWidth: 2, hoverOffset: 6 }] },
+    data: { labels: GROUPS.map(g => g.label), datasets: [{ data: [], backgroundColor: GROUPS.map(g => g.color), borderColor: "#fff", borderWidth: 2, hoverOffset: 6 }] },
     options: {
       maintainAspectRatio: false, cutout: "68%",
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => {
         const sum = c.dataset.data.reduce((a, b) => a + b, 0);
         return ` ${c.label}: ${c.raw} โปรเจกต์ (${pct(c.raw, sum)}%)`;
       } } } },
-      onClick: (e, els) => { if (els.length) toggleStatus(STATUS[els[0].index].key); },
+      onClick: (e, els) => { if (els.length) toggleStatus(GROUPS[els[0].index].key); },
       onHover: (e, els, ch) => { ch.canvas.style.cursor = els.length ? "pointer" : "default"; }
     },
     plugins: [centerText]
@@ -435,7 +471,7 @@ function initCharts() {
 
   charts.dept = new Chart($("#deptChart"), {
     type: "bar",
-    data: { labels: [], datasets: STATUS.map(s => ({ label: s.key, data: [], backgroundColor: s.color, stack: "s", maxBarThickness: 24, borderSkipped: false })) },
+    data: { labels: [], datasets: GROUPS.map(g => ({ label: g.label, data: [], backgroundColor: g.color, stack: "s", maxBarThickness: 24, borderSkipped: false })) },
     options: {
       indexAxis: "y", maintainAspectRatio: false, layout: { padding: { right: 28 } },
       scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "#eef1f6" } }, y: { stacked: true, grid: { display: false }, ticks: { font: { size: 13 }, color: "#1b2a4a" } } },
@@ -447,13 +483,15 @@ function initCharts() {
         } } } },
       onClick: (e, _, ch) => {
         const i = Math.round(ch.scales.y.getValueForPixel(e.y)), name = ch.data.labels[i];
-        if (name !== undefined) setDept(state.dept === name ? "" : name);
+        if (name !== undefined) toggleFocusDept(name);
       },
       onHover: (e, _, ch) => { ch.canvas.style.cursor = "pointer"; }
     },
     plugins: [totalsPlugin]
   });
-  $("#deptKeys").innerHTML = STATUS.map(s => `<span><i style="background:${s.color}"></i>${esc(s.key)}</span>`).join("");
+  $("#progKeys").innerHTML = STATUS.map(s => `<span><i style="background:${s.color}"></i>${esc(s.key)}</span>`).join("") +
+    `<span><i style="background:${DONE_GREEN}"></i>Success 100%</span><span>แท่งเข้ม = Success_Pct · แท่งอ่อน = Deliver_Pct</span>`;
+  $("#deptKeys").innerHTML = GROUPS.map(g => `<span><i style="background:${g.color}"></i>${esc(g.label)}</span>`).join("");
 
   charts.prog = new Chart($("#prog"), {
     type: "bar",
@@ -462,9 +500,9 @@ function initCharts() {
       { label: "Delivery", data: [], backgroundColor: DELIVER_COLOR, barPercentage: 0.9, categoryPercentage: 0.8 }
     ] },
     options: {
-      indexAxis: "y", maintainAspectRatio: false, layout: { padding: { right: 40 } },
-      scales: { x: { min: 0, max: 100, ticks: { stepSize: 25, callback: v => v + "%" }, grid: { color: "#eef1f6" } },
-        y: { grid: { display: false }, ticks: { autoSkip: false, font: { size: 12 }, color: "#1b2a4a" } } },
+      indexAxis: "x", maintainAspectRatio: false, layout: { padding: { top: 22 } },
+      scales: { y: { min: 0, max: 100, ticks: { stepSize: 25, callback: v => v + "%" }, grid: { color: "#eef1f6" } },
+        x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, minRotation: 0, font: { size: 11 }, color: "#1b2a4a" } } },
       plugins: { legend: { display: false }, tooltip: { callbacks: {
         title: items => charts.prog.$rows[items[0].dataIndex].name,
         label: c => ` ${c.dataset.label}: ${c.raw}%`,
@@ -477,27 +515,58 @@ function initCharts() {
 
 /* ---------- filters ---------- */
 function setDept(name) { state.dept = name; state.page = 1; update(); }
-function toggleStatus(key) { state.status = state.status === key ? "" : key; state.page = 1; update(); }
-function resetAll() { state.dept = ""; state.status = ""; state.q = ""; state.page = 1; update(); }
+let scrollFocus = false;
+function toggleStatus(key) { state.fStatus = state.fStatus === key ? "" : key; state.page = 1; scrollFocus = true; update(); }
+function toggleFocusDept(name) { state.fDept = state.fDept === name ? "" : name; state.page = 1; scrollFocus = true; update(); }
+function resetAll() { state.dept = ""; state.status = ""; state.q = ""; state.fDept = ""; state.fStatus = ""; state.page = 1; update(); }
 
 function fillDeptSelect() {
   const names = [...new Set(DATA.map(d => d.dept))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
   $("#dept").innerHTML = `<option value="">All Departments</option>` + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
   if (state.dept && !names.includes(state.dept)) state.dept = "";
-  $("#statusSel").innerHTML = `<option value="">All Status</option>` + STATUS.slice().reverse().map(s => `<option value="${esc(s.key)}">${esc(s.key)}</option>`).join("");
+  $("#statusSel").innerHTML = `<option value="">All Status</option>` + GROUPS.slice().reverse().map(g => `<option value="${esc(g.key)}">${esc(g.label)}${g.note ? " (" + esc(g.note) + ")" : ""}</option>`).join("");
 }
 
 /* ---------- loading ---------- */
 function notice(html, cls) { $("#notice").innerHTML = html ? `<div class="note ${cls || ""}">${html}</div>` : ""; }
+
+/* ข้อมูลตัวอย่าง: ใช้แสดงเมื่อโหลดจาก Google Sheets ไม่สำเร็จหรือไม่มีข้อมูล */
+let isSample = false;
+function sampleData() {
+  const S = [
+    ["Tolling order Plant 2", "MCS", "Completed", 100, 100, "k.Naphat"],
+    ["Extension Tolling Order", "Sales 2", "development", 80, 5, "k.Naphat and k.Rassarin"],
+    ["Adjust Design coil sequence for TMBP", "MCS", "UAT", 90, 5, "k.Phumpat"],
+    ["Negotiation (Short/Over shipment)", "SC-HRC", "Completed", 100, 100, "k.Jitrada"],
+    ["Create Order reference from SPCS", "SPCS", "Completed", 100, 100, "k.Trijinda"],
+    ["Download Importer Name list", "SC-Planing", "wait development", 10, 5, "k.Sisiree"],
+    ["Download Scrap Price", "SC-Planing", "Hand over", 100, 90, "k.Sisiree"],
+    ["Download Weight List", "Sales 3", "Completed", 100, 100, "k.Trijinda"],
+    ["Issue DI Plant3 (AS400)", "Sales 1", "Hand over", 100, 90, "k.Sivakorn"],
+    ["Check data Auto reply mail DMI", "Sales 2", "UAT", 90, 5, "k.Jaruwan"],
+    ["Auto Export Mechanical Properties", "MCS", "wait development", 10, 5, "k.Chettarin Phumthapthim"],
+    ["New nagoya order monitoring", "MCS", "Hand over", 100, 5, "k.Naphat"],
+    ["Download market price", "Sales 3", "Hand over", 100, 90, "k.Tassaporn Kanyasarn"],
+    ["MCS Auto check tie coil", "MCS", "development", 30, 5, "k.Naphat"],
+    ["Issue DI Plant3 (AS400) Phase 2", "Sales 1", "development", 60, 5, "k.Sivakorn"],
+    ["MCS DMI management", "MCS", "wait development", 10, 5, "k.Naphat"],
+    ["Auto : Query (daily report)", "Sales 1", "wait development", 10, 5, "k.Sivakorn"],
+    ["DMI management Phase 2", "MCS", "wait development", 10, 5, "k.Ramita Yungyuen"],
+    ["Negotiation (Short/Over shipment) phase2", "SC-HRC", "wait development", 10, 5, "k.Jitrada"]
+  ];
+  return S.map(([name, dept, status, success, deliver, remark]) =>
+    ({ name, dept, status, rawStatus: status, stage: STATUS.findIndex(s => s.key === status) + 1, success, deliver, remark }));
+}
 
 async function load() {
   if (!loaded) notice('<span class="spin"></span>กำลังโหลดข้อมูลจาก Google Sheets…');
   $("#refresh").disabled = true;
   try {
     DATA = await fetchProjects();
+    if (!DATA.length) throw new Error("ไม่พบข้อมูลโปรเจกต์ในชีต");
+    isSample = false;
     UNKNOWN = DATA.filter(d => !d.status).length;
     lastLoad = Date.now();
-    if (!DATA.length) { notice("ไม่พบข้อมูลโปรเจกต์ในชีต เพิ่มข้อมูลแล้วกด Refresh", ""); $("#app").hidden = true; return; }
     $("#app").hidden = false;
     if (!loaded) { initCharts(); loaded = true; }
     fillDeptSelect();
@@ -505,8 +574,18 @@ async function load() {
     $("#updated").textContent = "อัปเดตล่าสุด " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
     notice(UNKNOWN ? `พบ ${UNKNOWN} โปรเจกต์ที่สถานะไม่ตรงกับ 5 ค่ามาตรฐาน (${esc([...new Set(DATA.filter(d => !d.status).map(d => d.rawStatus || "ว่าง"))].join(", "))}) จึงไม่ถูกนับในกราฟสถานะ` : "", "warn");
   } catch (e) {
-    const had = loaded && DATA.length;
-    notice(`<b>${had ? "รีเฟรชข้อมูลไม่สำเร็จ แสดงข้อมูลล่าสุดที่โหลดไว้" : "โหลดข้อมูลไม่สำเร็จ"}</b><span>${esc(e.message || e)}</span><button class="btn light" id="retry" type="button">ลองอีกครั้ง</button>`, "err");
+    const had = loaded && DATA.length && !isSample;
+    if (had) {
+      notice(`<b>รีเฟรชข้อมูลไม่สำเร็จ แสดงข้อมูลล่าสุดที่โหลดไว้</b><span>${esc(e.message || e)}</span><button class="btn light" id="retry" type="button">ลองอีกครั้ง</button>`, "err");
+    } else {
+      DATA = sampleData(); isSample = true; UNKNOWN = 0;
+      $("#app").hidden = false;
+      if (!loaded) { initCharts(); loaded = true; }
+      fillDeptSelect();
+      update();
+      $("#updated").textContent = "ข้อมูลสำรอง (10 พ.ย. 2026)";
+      notice(`<b>กำลังแสดงข้อมูลสำรองที่บันทึกไว้ (ณ 10 พ.ย. 2026)</b><span>โหลดข้อมูลสดจาก Google Sheets ไม่สำเร็จ: ${esc(e.message || e)}</span><button class="btn light" id="retry" type="button">ลองโหลดข้อมูลสดอีกครั้ง</button>`, "warn");
+    }
   } finally { $("#refresh").disabled = false; }
 }
 
@@ -520,8 +599,9 @@ $("#notice").addEventListener("click", e => { if (e.target.closest("#retry")) lo
 $("#legend").addEventListener("click", e => { const b = e.target.closest("[data-s]"); if (b) toggleStatus(b.dataset.s); });
 $("#chips").addEventListener("click", e => {
   const b = e.target.closest("[data-k]"); if (!b) return;
-  if (b.dataset.k === "dept") state.dept = ""; else if (b.dataset.k === "status") state.status = ""; else state.q = "";
-  state.page = 1; update();
+  const k = b.dataset.k;
+  if (k === "dept") state.dept = ""; else if (k === "status") state.status = ""; else if (k === "fdept") state.fDept = ""; else if (k === "fstatus") state.fStatus = ""; else state.q = "";
+  state.page = 1; scrollFocus = true; update();
 });
 $("#tbl").addEventListener("click", e => {
   const b = e.target.closest("[data-k]"); if (!b) return;
