@@ -55,7 +55,8 @@ button,select,input{font:inherit;color:inherit}
 .card .n{font-size:34px;line-height:1.1;font-weight:700;font-variant-numeric:tabular-nums}
 .card .s{font-size:12px;color:var(--muted)}
 
-.grid2{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;margin:0 0 16px}
+.grid2{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:16px;margin:0 0 16px}
+.grid2>section:first-child{order:2}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:0 0 16px}
 .grid2 .panel{margin:0}
 .panel h2{margin:0;font-size:17px;font-weight:600}
@@ -108,7 +109,7 @@ td.nm{font-weight:500;min-width:220px}
 .pager button[aria-current="page"]{background:var(--navy);border-color:var(--navy);color:#fff}
 .pager button:disabled{opacity:.45;cursor:default}
 
-@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}.grid2>section:first-child{order:0}}
 @media (max-width:560px){
   .top h1{font-size:19px}
   .wrap{padding:14px 12px 40px}
@@ -141,7 +142,6 @@ td.nm{font-weight:500;min-width:220px}
   <div id="notice"></div>
   <div id="app" hidden>
     <div class="chips" id="chips" hidden></div>
-    <section class="cards" id="cards" aria-label="สรุปจำนวนโปรเจกต์"></section>
 
     <section class="panel">
       <h2>Project Progress and Delivery</h2>
@@ -446,7 +446,7 @@ function renderChips() {
 }
 
 function update() {
-  renderCards(); renderDonut(); renderDept(); renderProg(); renderTable(); renderChips();
+  renderDonut(); renderDept(); renderProg(); renderTable(); renderChips();
 }
 
 /* ---------- charts ---------- */
