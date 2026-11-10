@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RPA Project Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f1f4f9;--card:#fff;--navy:#14284b;--ink:#1b2a4a;--muted:#64748b;--line:#e2e8f0;--track:#e8edf5;
+  --success:#1e3a8a;--deliver:#9db2e0;--focus:#2563eb;--warn:#8a5200;--warnbg:#fdeed2;--err:#a32d2d;--errbg:#fbe9e9;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Sarabun",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.5}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+[hidden]{display:none!important}
+
+.top{background:var(--navy);color:#fff}
+.top-in{max-width:1240px;margin:0 auto;padding:16px 20px;display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;justify-content:space-between}
+.top h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em}
+.top p{margin:0;font-size:13px;color:#b8c4dd}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctl label{display:flex;align-items:center;gap:8px;font-size:13px;color:#b8c4dd}
+.top select{height:36px;min-width:170px;padding:0 10px;border-radius:8px;border:1px solid #3a5280;background:#1c3560;color:#fff;cursor:pointer}
+.btn{height:36px;padding:0 14px;border-radius:8px;border:1px solid #3a5280;background:#1c3560;color:#fff;cursor:pointer}
+.btn:hover{background:#25427a}
+.btn.light{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn.light:hover{background:var(--bg)}
+#updated{font-size:12px;color:#b8c4dd}
+
+.wrap{max-width:1240px;margin:0 auto;padding:20px 20px 48px}
+.note{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;padding:12px 16px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:14px}
+.note.err{background:var(--errbg);border-color:#f3c7c7;color:var(--err)}
+.note.warn{background:var(--warnbg);border-color:#f3dcae;color:var(--warn)}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--success)}
+@media (prefers-reduced-motion:no-preference){.spin{animation:sp .8s linear infinite}}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.chip{border:1px solid #c5d0ea;background:#e8edf8;color:var(--success);border-radius:999px;padding:2px 12px;font-size:13px;cursor:pointer}
+.chip:hover{background:#dbe3f5}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:14px;margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;gap:14px;align-items:center}
+.ic{flex:none;width:46px;height:46px;border-radius:12px;display:grid;place-items:center}
+.ic svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.card .t{font-size:13px;color:var(--muted)}
+.card .n{font-size:34px;line-height:1.1;font-weight:700;font-variant-numeric:tabular-nums}
+.card .s{font-size:12px;color:var(--muted)}
+
+.grid2{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;margin:0 0 16px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:0 0 16px}
+.grid2 .panel{margin:0}
+.panel h2{margin:0;font-size:17px;font-weight:600}
+.panel .hint{margin:2px 0 12px;font-size:13px;color:var(--muted)}
+
+.donutBox{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:center}
+.dw{position:relative;width:210px;height:210px;flex:none}
+.legend{list-style:none;margin:0;padding:0;flex:1 1 190px;min-width:190px}
+.legend button{display:grid;grid-template-columns:12px 1fr auto auto;gap:8px;align-items:center;width:100%;padding:6px 8px;border:0;border-radius:8px;background:none;text-align:left;cursor:pointer;font-size:14px}
+.legend button:hover{background:var(--bg)}
+.legend button[aria-pressed="true"]{background:#e8edf8;box-shadow:inset 0 0 0 1px #c5d0ea}
+.legend i{width:12px;height:12px;border-radius:3px}
+.legend b{font-variant-numeric:tabular-nums}
+.legend em{font-style:normal;color:var(--muted);font-size:13px;min-width:46px;text-align:right;font-variant-numeric:tabular-nums}
+
+.keys{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 10px;font-size:13px;color:var(--muted)}
+.keys span{display:inline-flex;align-items:center;gap:6px}
+.keys i{width:12px;height:12px;border-radius:3px}
+.cv{position:relative;width:100%}
+.empty{padding:28px 8px;text-align:center;color:var(--muted);font-size:14px}
+
+.bar-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:10px 0 12px}
+.bar-tools .l{display:flex;flex-wrap:wrap;gap:8px}
+.bar-tools input,.bar-tools select{height:36px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.bar-tools input{min-width:220px}
+.count{font-size:13px;color:var(--muted)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;min-width:820px}
+th{background:#f7f9fc;text-align:left;font-weight:600;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line);padding:0}
+th button{width:100%;padding:10px 12px;border:0;background:none;text-align:left;font-weight:600;color:inherit;cursor:pointer;display:flex;gap:6px;align-items:center}
+th button:hover{color:var(--ink)}
+th[aria-sort="ascending"] button,th[aria-sort="descending"] button{color:var(--success)}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:14px}
+tr:last-child td{border-bottom:0}
+td.nm{font-weight:500;min-width:220px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:500;white-space:nowrap}
+.badge i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.pb{display:flex;align-items:center;gap:8px;min-width:150px}
+.pb .bar{flex:1;height:8px;border-radius:4px;background:var(--track);overflow:hidden}
+.pb .bar span{display:block;height:100%;border-radius:4px}
+.pb b{width:42px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.rm{color:var(--muted);min-width:140px}
+.pager{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:12px}
+.pager nav{display:flex;gap:4px;flex-wrap:wrap}
+.pager button{min-width:34px;height:34px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+.pager button:hover:not(:disabled){background:var(--bg)}
+.pager button[aria-current="page"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.pager button:disabled{opacity:.45;cursor:default}
+
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){
+  .top h1{font-size:19px}
+  .wrap{padding:14px 12px 40px}
+  .panel{padding:14px}
+  .card .n{font-size:28px}
+  .bar-tools input{min-width:0;width:100%}
+  .top select{min-width:0;flex:1}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div>
+      <h1>RPA Project Dashboard</h1>
+      <p>ติดตามสถานะ ความคืบหน้าการพัฒนา และการส่งมอบของทุกโปรเจกต์</p>
+    </div>
+    <div class="ctl">
+      <label>Department
+        <select id="dept" aria-label="เลือกแผนก"><option value="">All Departments</option></select>
+      </label>
+      <button class="btn" id="reset" type="button" hidden>Reset filter</button>
+      <button class="btn" id="refresh" type="button">Refresh</button>
+      <span id="updated" aria-live="polite"></span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="notice"></div>
+  <div id="app" hidden>
+    <div class="chips" id="chips" hidden></div>
+    <section class="cards" id="cards" aria-label="สรุปจำนวนโปรเจกต์"></section>
+
+    <div class="grid2">
+      <section class="panel">
+        <h2>Project Status Overview</h2>
+        <p class="hint">สัดส่วนโปรเจกต์ตามสถานะ คลิกเพื่อกรองตารางและกราฟความคืบหน้า</p>
+        <div class="donutBox">
+          <div class="dw"><canvas id="donut" role="img" aria-label="Donut chart แสดงสัดส่วนโปรเจกต์ตามสถานะ"></canvas></div>
+          <ul class="legend" id="legend"></ul>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Department Project Overview</h2>
+        <p class="hint">จำนวนโปรเจกต์แยกตามแผนกและสถานะ คลิกที่แผนกเพื่อกรอง</p>
+        <div class="keys" id="deptKeys"></div>
+        <div class="cv" id="deptWrap"><canvas id="deptChart" role="img" aria-label="Bar chart จำนวนโปรเจกต์แยกตามแผนกและสถานะ"></canvas></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>Project Progress and Delivery</h2>
+      <p class="hint">เปรียบเทียบความคืบหน้าการพัฒนา (Success) กับการส่งมอบ (Delivery) เรียงจากความคืบหน้ามากไปน้อย</p>
+      <div class="keys">
+        <span><i style="background:var(--success)"></i>Success_Pct</span>
+        <span><i style="background:var(--deliver)"></i>Deliver_Pct</span>
+      </div>
+      <div class="cv" id="progWrap"><canvas id="prog" role="img" aria-label="Bar chart เปรียบเทียบ Success และ Deliver ของแต่ละโปรเจกต์"></canvas></div>
+      <div class="empty" id="progEmpty" hidden>ไม่มีโปรเจกต์ตามตัวกรองที่เลือก</div>
+    </section>
+
+    <section class="panel">
+      <h2>Project Detail</h2>
+      <div class="bar-tools">
+        <div class="l">
+          <input id="q" type="search" placeholder="ค้นหาชื่อโปรเจกต์" aria-label="ค้นหาชื่อโปรเจกต์">
+          <select id="statusSel" aria-label="กรองตามสถานะ"></select>
+        </div>
+        <span class="count" id="count"></span>
+      </div>
+      <div class="tw"><table id="tbl"></table></div>
+      <div class="pager" id="pager"></div>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const CONFIG = {
+  CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSKS5rbVi0MeKZccefnQpdozBb0O7f18gsJxl9_W_dZrfWnh2tgB3rjTLpRO3IOPlplsR9QdYkxB_T0/pub?gid=0&single=true&output=csv",
+  AUTO_REFRESH_MIN: 5,
+  PAGE_SIZE: 10
+};
+
+const STATUS = [
+  { key: "wait development", color: "#94a3b8", bg: "#eef1f5", fg: "#475569" },
+  { key: "development",      color: "#f97316", bg: "#ffeedd", fg: "#9a3d06" },
+  { key: "UAT",              color: "#7c3aed", bg: "#efe9fd", fg: "#5b21b6" },
+  { key: "Hand over",        color: "#2563eb", bg: "#e5edfd", fg: "#1e40af" },
+  { key: "Completed",        color: "#16a34a", bg: "#e3f5ea", fg: "#166534" }
+];
+const SUCCESS_COLOR = "#1e3a8a", DELIVER_COLOR = "#9db2e0";
+const ICON = {
+  total: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  done: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/>',
+  prog: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  wait: '<circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/>',
+  hand: '<path d="M4 12h12"/><path d="M12 7l5 5-5 5"/><path d="M20 5v14"/>'
+};
+const COLS = [
+  { k: "name", l: "Project Name" }, { k: "dept", l: "Department" }, { k: "status", l: "Status" },
+  { k: "success", l: "Success Progress" }, { k: "deliver", l: "Delivery Progress" }, { k: "remark", l: "Remark" }
+];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (n, t) => t ? (n / t * 100).toFixed(1) : "0.0";
+const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+const stOf = key => STATUS.find(s => s.key === key);
+
+let DATA = [], UNKNOWN = 0, loaded = false, lastLoad = 0, donutTotal = 0;
+const charts = {};
+const state = { dept: "", status: "", q: "", sort: { key: "success", dir: "desc" }, page: 1 };
+
+/* ---------- data layer: Google Sheets CSV (replace fetchProjects to use another API) ---------- */
+function parseCSV(t) {
+  t = t.replace(/^\uFEFF/, "");
+  const rows = []; let r = [], c = "", q = false;
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (q) {
+      if (ch === '"') { if (t[i + 1] === '"') { c += '"'; i++; } else q = false; } else c += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ",") { r.push(c); c = ""; }
+    else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && t[i + 1] === "\n") i++;
+      r.push(c); c = ""; rows.push(r); r = [];
+    } else c += ch;
+  }
+  if (c !== "" || r.length) { r.push(c); rows.push(r); }
+  return rows.filter(x => x.some(v => v.trim() !== ""));
+}
+
+function normalize(rows) {
+  if (rows.length < 2) return [];
+  const key = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const h = rows[0].map(key);
+  const find = (...n) => { for (const x of n) { const i = h.indexOf(x); if (i > -1) return i; } return -1; };
+  const ci = { name: find("projectname", "name"), dept: find("department"), status: find("status"),
+    succ: find("successpct", "success"), del: find("deliverpct", "deliver"), rem: find("remark", "detail") };
+  if (ci.name < 0 || ci.status < 0 || ci.succ < 0)
+    throw new Error("ไม่พบคอลัมน์ Project_Name, Status หรือ Success_Pct ในชีต ตรวจสอบหัวตารางแถวแรก");
+  const g = (r, i) => i < 0 ? "" : (r[i] || "").replace(/\s+/g, " ").trim();
+  const num = v => Math.max(0, Math.min(100, parseFloat(v) || 0));
+  return rows.slice(1).map(r => {
+    const raw = g(r, ci.status);
+    const idx = STATUS.findIndex(s => s.key.toLowerCase() === raw.toLowerCase());
+    return { name: g(r, ci.name), dept: g(r, ci.dept) || "-", status: idx > -1 ? STATUS[idx].key : "", rawStatus: raw,
+      stage: idx + 1, success: num(g(r, ci.succ)), deliver: num(g(r, ci.del)), remark: g(r, ci.rem) };
+  }).filter(o => o.name);
+}
+
+async function fetchProjects() {
+  const url = CONFIG.CSV_URL + (CONFIG.CSV_URL.includes("?") ? "&" : "?") + "t=" + Date.now();
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("เปิดลิงก์ข้อมูลไม่ได้ (HTTP " + res.status + ") ตรวจสอบว่ายังเปิด Publish to web อยู่");
+  return normalize(parseCSV(await res.text()));
+}
+
+/* ---------- derived data ---------- */
+const deptRows = () => state.dept ? DATA.filter(d => d.dept === state.dept) : DATA;
+const projRows = () => deptRows().filter(d => !state.status || d.status === state.status);
+const countBy = rows => Object.fromEntries(STATUS.map(s => [s.key, rows.filter(r => r.status === s.key).length]));
+function tableRows() {
+  const q = state.q.trim().toLowerCase();
+  const rows = projRows().filter(d => !q || d.name.toLowerCase().includes(q));
+  const S = { name: r => r.name.toLowerCase(), dept: r => r.dept.toLowerCase(), status: r => r.stage,
+    success: r => r.success, deliver: r => r.deliver, remark: r => r.remark.toLowerCase() }[state.sort.key];
+  const m = state.sort.dir === "asc" ? 1 : -1;
+  return rows.slice().sort((a, b) => { const x = S(a), y = S(b); return x < y ? -m : x > y ? m : a.name.localeCompare(b.name); });
+}
+
+/* ---------- components ---------- */
+function renderCards() {
+  const rows = deptRows(), t = rows.length, c = countBy(rows);
+  const defs = [
+    ["Total Projects", t, "ทุกสถานะ", "#1e3a8a", "#e8edf8", ICON.total],
+    ["Completed", c["Completed"], pct(c["Completed"], t) + "% ของทั้งหมด", "#16a34a", "#e3f5ea", ICON.done],
+    ["In Progress", c["development"] + c["UAT"], "development + UAT", "#f97316", "#ffeedd", ICON.prog],
+    ["Waiting Development", c["wait development"], pct(c["wait development"], t) + "% ของทั้งหมด", "#64748b", "#eef1f5", ICON.wait],
+    ["Hand Over", c["Hand over"], pct(c["Hand over"], t) + "% ของทั้งหมด", "#2563eb", "#e5edfd", ICON.hand]
+  ];
+  $("#cards").innerHTML = defs.map(([l, n, s, col, bg, ic]) =>
+    `<div class="card"><div class="ic" style="background:${bg};color:${col}"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg></div>
+     <div><div class="t">${l}</div><div class="n">${n}</div><div class="s">${s}</div></div></div>`).join("");
+}
+
+const centerText = { id: "centerText", afterDraw(ch) {
+  const a = ch.chartArea; if (!a) return;
+  const ctx = ch.ctx, cx = (a.left + a.right) / 2, cy = (a.top + a.bottom) / 2;
+  ctx.save(); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = "#14284b"; ctx.font = "700 30px Sarabun,sans-serif"; ctx.fillText(donutTotal, cx, cy - 8);
+  ctx.fillStyle = "#64748b"; ctx.font = "400 12px Sarabun,sans-serif"; ctx.fillText("projects", cx, cy + 16);
+  ctx.restore();
+} };
+
+function renderDonut() {
+  const rows = deptRows(), c = countBy(rows), known = STATUS.reduce((a, s) => a + c[s.key], 0);
+  donutTotal = rows.length;
+  charts.donut.data.datasets[0].data = STATUS.map(s => c[s.key]);
+  charts.donut.update();
+  $("#legend").innerHTML = STATUS.slice().reverse().map(s =>
+    `<li><button type="button" data-s="${esc(s.key)}" aria-pressed="${state.status === s.key}">
+      <i style="background:${s.color}"></i><span>${esc(s.key)}</span><b>${c[s.key]}</b><em>${pct(c[s.key], known)}%</em></button></li>`).join("");
+}
+
+const totalsPlugin = { id: "totals", afterDatasetsDraw(ch) {
+  const ctx = ch.ctx, x = ch.scales.x, y = ch.scales.y;
+  ctx.save(); ctx.fillStyle = "#14284b"; ctx.font = "600 12px Sarabun,sans-serif"; ctx.textBaseline = "middle";
+  ch.data.labels.forEach((_, i) => {
+    const s = ch.data.datasets.reduce((a, d) => a + (d.data[i] || 0), 0);
+    ctx.fillText(s, x.getPixelForValue(s) + 6, y.getPixelForValue(i));
+  });
+  ctx.restore();
+} };
+
+function renderDept() {
+  const names = [...new Set(DATA.map(d => d.dept))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const totals = Object.fromEntries(names.map(n => [n, DATA.filter(d => d.dept === n).length]));
+  names.sort((a, b) => totals[b] - totals[a] || a.localeCompare(b, undefined, { numeric: true }));
+  $("#deptWrap").style.height = (names.length * 42 + 56) + "px";
+  const ch = charts.dept;
+  ch.data.labels = names;
+  STATUS.forEach((s, i) => {
+    const ds = ch.data.datasets[i];
+    ds.data = names.map(n => DATA.filter(d => d.dept === n && d.status === s.key).length);
+    ds.backgroundColor = names.map(n => !state.dept || n === state.dept ? s.color : hexA(s.color, 0.22));
+  });
+  ch.update();
+}
+
+function wrap(s, n) {
+  const out = []; let line = "";
+  s.split(" ").forEach(w => {
+    if ((line + " " + w).trim().length > n && line) { out.push(line); line = w; } else line = (line + " " + w).trim();
+  });
+  if (line) out.push(line);
+  return out;
+}
+
+const pctLabels = { id: "pctLabels", afterDatasetsDraw(ch) {
+  const ctx = ch.ctx;
+  ctx.save(); ctx.font = "600 11px Sarabun,sans-serif"; ctx.textBaseline = "middle"; ctx.fillStyle = "#334155";
+  ch.data.datasets.forEach((ds, di) => ch.getDatasetMeta(di).data.forEach((bar, i) => ctx.fillText(ds.data[i] + "%", bar.x + 5, bar.y)));
+  ctx.restore();
+} };
+
+function renderProg() {
+  const rows = projRows().slice().sort((a, b) => b.success - a.success || b.deliver - a.deliver || a.name.localeCompare(b.name));
+  $("#progEmpty").hidden = rows.length > 0;
+  $("#progWrap").hidden = rows.length === 0;
+  if (!rows.length) return;
+  const w = $("#progWrap").clientWidth || 800, at = w < 520 ? 20 : w < 800 ? 30 : 40;
+  $("#progWrap").style.height = (rows.length * 46 + 56) + "px";
+  const ch = charts.prog;
+  ch.$rows = rows;
+  ch.data.labels = rows.map(r => wrap(r.name, at));
+  ch.data.datasets[0].data = rows.map(r => r.success);
+  ch.data.datasets[1].data = rows.map(r => r.deliver);
+  ch.update();
+}
+
+function renderTable() {
+  const rows = tableRows(), n = rows.length, size = CONFIG.PAGE_SIZE;
+  const pages = Math.max(1, Math.ceil(n / size));
+  if (state.page > pages) state.page = pages;
+  const from = (state.page - 1) * size, part = rows.slice(from, from + size);
+
+  $("#tbl").innerHTML = `<thead><tr>${COLS.map(c => {
+    const on = state.sort.key === c.k, dir = on ? (state.sort.dir === "asc" ? "ascending" : "descending") : "none";
+    return `<th aria-sort="${dir}"><button type="button" data-k="${c.k}">${c.l}<span aria-hidden="true">${on ? (state.sort.dir === "asc" ? "↑" : "↓") : ""}</span></button></th>`;
+  }).join("")}</tr></thead><tbody>${part.length ? part.map(r => {
+    const s = stOf(r.status) || { bg: "#eef1f5", fg: "#475569" };
+    const bar = (v, col) => `<div class="pb"><div class="bar"><span style="width:${v}%;background:${col}"></span></div><b>${Math.round(v)}%</b></div>`;
+    return `<tr><td class="nm">${esc(r.name)}</td><td>${esc(r.dept)}</td>
+      <td><span class="badge" style="background:${s.bg};color:${s.fg}"><i></i>${esc(r.status || r.rawStatus || "-")}</span></td>
+      <td>${bar(r.success, SUCCESS_COLOR)}</td><td>${bar(r.deliver, DELIVER_COLOR)}</td>
+      <td class="rm">${r.remark ? esc(r.remark) : "–"}</td></tr>`;
+  }).join("") : `<tr><td colspan="6"><div class="empty">ไม่พบโปรเจกต์ที่ตรงกับเงื่อนไข</div></td></tr>`}</tbody>`;
+
+  $("#count").textContent = n ? `แสดง ${from + 1}–${from + part.length} จาก ${n} โปรเจกต์` : "0 โปรเจกต์";
+  let nums = "";
+  if (pages > 1) {
+    const lo = Math.max(1, Math.min(state.page - 2, pages - 4)), hi = Math.min(pages, lo + 4);
+    for (let p = lo; p <= hi; p++) nums += `<button type="button" data-p="${p}" ${p === state.page ? 'aria-current="page"' : ""}>${p}</button>`;
+    $("#pager").innerHTML = `<span class="count">หน้า ${state.page} / ${pages}</span><nav aria-label="เปลี่ยนหน้า">
+      <button type="button" data-p="${state.page - 1}" ${state.page === 1 ? "disabled" : ""}>ก่อนหน้า</button>${nums}
+      <button type="button" data-p="${state.page + 1}" ${state.page === pages ? "disabled" : ""}>ถัดไป</button></nav>`;
+  } else $("#pager").innerHTML = "";
+}
+
+function renderChips() {
+  const c = [];
+  if (state.dept) c.push(["dept", "Department: " + state.dept]);
+  if (state.status) c.push(["status", "Status: " + state.status]);
+  if (state.q.trim()) c.push(["q", "ค้นหา: " + state.q.trim()]);
+  $("#chips").innerHTML = c.map(([k, t]) => `<button class="chip" type="button" data-k="${k}" aria-label="ลบตัวกรอง ${esc(t)}">${esc(t)} ×</button>`).join("");
+  $("#chips").hidden = !c.length;
+  $("#reset").hidden = !c.length;
+  $("#dept").value = state.dept;
+  $("#statusSel").value = state.status;
+  if ($("#q").value !== state.q) $("#q").value = state.q;
+}
+
+function update() {
+  renderCards(); renderDonut(); renderDept(); renderProg(); renderTable(); renderChips();
+}
+
+/* ---------- charts ---------- */
+function initCharts() {
+  Chart.defaults.font.family = 'Sarabun,system-ui,sans-serif';
+  Chart.defaults.color = "#64748b";
+
+  charts.donut = new Chart($("#donut"), {
+    type: "doughnut",
+    data: { labels: STATUS.map(s => s.key), datasets: [{ data: [], backgroundColor: STATUS.map(s => s.color), borderColor: "#fff", borderWidth: 2, hoverOffset: 6 }] },
+    options: {
+      maintainAspectRatio: false, cutout: "68%",
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => {
+        const sum = c.dataset.data.reduce((a, b) => a + b, 0);
+        return ` ${c.label}: ${c.raw} โปรเจกต์ (${pct(c.raw, sum)}%)`;
+      } } } },
+      onClick: (e, els) => { if (els.length) toggleStatus(STATUS[els[0].index].key); },
+      onHover: (e, els, ch) => { ch.canvas.style.cursor = els.length ? "pointer" : "default"; }
+    },
+    plugins: [centerText]
+  });
+
+  charts.dept = new Chart($("#deptChart"), {
+    type: "bar",
+    data: { labels: [], datasets: STATUS.map(s => ({ label: s.key, data: [], backgroundColor: s.color, stack: "s", maxBarThickness: 24, borderSkipped: false })) },
+    options: {
+      indexAxis: "y", maintainAspectRatio: false, layout: { padding: { right: 28 } },
+      scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "#eef1f6" } }, y: { stacked: true, grid: { display: false }, ticks: { font: { size: 13 }, color: "#1b2a4a" } } },
+      plugins: { legend: { display: false }, tooltip: { mode: "index", axis: "y", intersect: false, filter: i => i.raw > 0, callbacks: {
+        footer: items => {
+          const rows = DATA.filter(d => d.dept === items[0].label);
+          const ip = rows.filter(r => r.status === "development" || r.status === "UAT").length;
+          return ["Completed: " + rows.filter(r => r.status === "Completed").length, "In Progress: " + ip, "Total: " + rows.length];
+        } } } },
+      onClick: (e, _, ch) => {
+        const i = Math.round(ch.scales.y.getValueForPixel(e.y)), name = ch.data.labels[i];
+        if (name !== undefined) setDept(state.dept === name ? "" : name);
+      },
+      onHover: (e, _, ch) => { ch.canvas.style.cursor = "pointer"; }
+    },
+    plugins: [totalsPlugin]
+  });
+  $("#deptKeys").innerHTML = STATUS.map(s => `<span><i style="background:${s.color}"></i>${esc(s.key)}</span>`).join("");
+
+  charts.prog = new Chart($("#prog"), {
+    type: "bar",
+    data: { labels: [], datasets: [
+      { label: "Success", data: [], backgroundColor: SUCCESS_COLOR, barPercentage: 0.9, categoryPercentage: 0.8 },
+      { label: "Delivery", data: [], backgroundColor: DELIVER_COLOR, barPercentage: 0.9, categoryPercentage: 0.8 }
+    ] },
+    options: {
+      indexAxis: "y", maintainAspectRatio: false, layout: { padding: { right: 40 } },
+      scales: { x: { min: 0, max: 100, ticks: { stepSize: 25, callback: v => v + "%" }, grid: { color: "#eef1f6" } },
+        y: { grid: { display: false }, ticks: { autoSkip: false, font: { size: 12 }, color: "#1b2a4a" } } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        title: items => charts.prog.$rows[items[0].dataIndex].name,
+        label: c => ` ${c.dataset.label}: ${c.raw}%`,
+        afterBody: items => { const r = charts.prog.$rows[items[0].dataIndex]; return ["Status: " + (r.status || r.rawStatus), "Department: " + r.dept]; }
+      } } }
+    },
+    plugins: [pctLabels]
+  });
+}
+
+/* ---------- filters ---------- */
+function setDept(name) { state.dept = name; state.page = 1; update(); }
+function toggleStatus(key) { state.status = state.status === key ? "" : key; state.page = 1; update(); }
+function resetAll() { state.dept = ""; state.status = ""; state.q = ""; state.page = 1; update(); }
+
+function fillDeptSelect() {
+  const names = [...new Set(DATA.map(d => d.dept))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  $("#dept").innerHTML = `<option value="">All Departments</option>` + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  if (state.dept && !names.includes(state.dept)) state.dept = "";
+  $("#statusSel").innerHTML = `<option value="">All Status</option>` + STATUS.slice().reverse().map(s => `<option value="${esc(s.key)}">${esc(s.key)}</option>`).join("");
+}
+
+/* ---------- loading ---------- */
+function notice(html, cls) { $("#notice").innerHTML = html ? `<div class="note ${cls || ""}">${html}</div>` : ""; }
+
+async function load() {
+  if (!loaded) notice('<span class="spin"></span>กำลังโหลดข้อมูลจาก Google Sheets…');
+  $("#refresh").disabled = true;
+  try {
+    DATA = await fetchProjects();
+    UNKNOWN = DATA.filter(d => !d.status).length;
+    lastLoad = Date.now();
+    if (!DATA.length) { notice("ไม่พบข้อมูลโปรเจกต์ในชีต เพิ่มข้อมูลแล้วกด Refresh", ""); $("#app").hidden = true; return; }
+    $("#app").hidden = false;
+    if (!loaded) { initCharts(); loaded = true; }
+    fillDeptSelect();
+    update();
+    $("#updated").textContent = "อัปเดตล่าสุด " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+    notice(UNKNOWN ? `พบ ${UNKNOWN} โปรเจกต์ที่สถานะไม่ตรงกับ 5 ค่ามาตรฐาน (${esc([...new Set(DATA.filter(d => !d.status).map(d => d.rawStatus || "ว่าง"))].join(", "))}) จึงไม่ถูกนับในกราฟสถานะ` : "", "warn");
+  } catch (e) {
+    const had = loaded && DATA.length;
+    notice(`<b>${had ? "รีเฟรชข้อมูลไม่สำเร็จ แสดงข้อมูลล่าสุดที่โหลดไว้" : "โหลดข้อมูลไม่สำเร็จ"}</b><span>${esc(e.message || e)}</span><button class="btn light" id="retry" type="button">ลองอีกครั้ง</button>`, "err");
+  } finally { $("#refresh").disabled = false; }
+}
+
+/* ---------- events ---------- */
+$("#dept").addEventListener("change", e => setDept(e.target.value));
+$("#statusSel").addEventListener("change", e => { state.status = e.target.value; state.page = 1; update(); });
+$("#q").addEventListener("input", e => { state.q = e.target.value; state.page = 1; renderTable(); renderChips(); });
+$("#reset").addEventListener("click", resetAll);
+$("#refresh").addEventListener("click", load);
+$("#notice").addEventListener("click", e => { if (e.target.closest("#retry")) load(); });
+$("#legend").addEventListener("click", e => { const b = e.target.closest("[data-s]"); if (b) toggleStatus(b.dataset.s); });
+$("#chips").addEventListener("click", e => {
+  const b = e.target.closest("[data-k]"); if (!b) return;
+  if (b.dataset.k === "dept") state.dept = ""; else if (b.dataset.k === "status") state.status = ""; else state.q = "";
+  state.page = 1; update();
+});
+$("#tbl").addEventListener("click", e => {
+  const b = e.target.closest("[data-k]"); if (!b) return;
+  const k = b.dataset.k;
+  state.sort = state.sort.key === k ? { key: k, dir: state.sort.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "name" || k === "dept" || k === "remark" ? "asc" : "desc" };
+  state.page = 1; renderTable();
+});
+$("#pager").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (b && !b.disabled) { state.page = +b.dataset.p; renderTable(); } });
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => loaded && renderProg(), 200); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && loaded && Date.now() - lastLoad > 60000) load(); });
+if (CONFIG.AUTO_REFRESH_MIN > 0) setInterval(() => { if (!document.hidden) load(); }, CONFIG.AUTO_REFRESH_MIN * 60000);
+load();
+</script>
+</body>
+</html>
